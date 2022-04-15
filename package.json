@@ -1,0 +1,16 @@
+{
+  "name": "browserslist-compat",
+  "version": "1.0.0",
+  "license": "MIT",
+  "dependencies": {
+    "@mdn/browser-compat-data": "^4.1.16",
+    "browserslist": "^4.20.2"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.19.0",
+    "@typescript-eslint/parser": "^5.19.0",
+    "eslint": "^8.13.0",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.3"
+  }
+}
