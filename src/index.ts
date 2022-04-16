@@ -44,7 +44,7 @@ const BROWSERS_MAP: {[key: string]: BrowserNames} = {
     // "baidu": null,
 };
 
-class mdnCompat {
+export class MdnCompat {
     private browserVersions: {[BrowserNames: string]: string[]} = {};
 
     constructor(
@@ -84,7 +84,8 @@ class mdnCompat {
         if (!compat) {
             const primaryResults: PriCompatResult = {};
             // nested identifier compat, run recursive
-            for (const [identName, subIdent] of Object.entries(ident) ) {
+            for (const identName of Object.keys(ident) ) {
+                const subIdent = ident[identName];
                 const unsupports = this.unsupport(subIdent);
                 if (Object.keys(unsupports).length) {
                     primaryResults[identName] = unsupports;
@@ -97,7 +98,8 @@ class mdnCompat {
         const support = compat.support;
 
         const unsupportBrowsers : browserVersionMap = {};
-        for (const [unknownBrowser, statement] of Object.entries(support)) {
+        for (const unknownBrowser of Object.keys(support)) {
+            const statement = support[unknownBrowser];
             if ( !(unknownBrowser in this.browserVersions)) continue; // ignore non-target browser
 
             // force type casting
@@ -138,5 +140,3 @@ class mdnCompat {
         return results;
     }
 }
-
-export default mdnCompat;

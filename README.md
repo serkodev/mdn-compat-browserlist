@@ -21,16 +21,16 @@ yarn add mdn-compat-browserlist
 ## Setup
 
 ```js
-import mdnCompat from "mdn-compat-browserlist";
+import { MdnCompat } from "mdn-compat-browserlist";
 import bcd from "@mdn/browser-compat-data";
 ```
 
 ## Usage
 
-Init `mdnCompat` object with browserlist query and config (optional).
+Init `MdnCompat` with browserlist query and config (optional).
 
 ```js
-const compat = new mdnCompat(["> 0.5%", "last 2 versions", "not dead"]);
+const compat = new MdnCompat(["> 0.5%", "last 2 versions", "not dead"]);
 
 compat.unsupport(bcd.css);
 compat.unsupport(bcd.css.properties);
