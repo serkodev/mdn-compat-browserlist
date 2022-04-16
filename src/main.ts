@@ -1,14 +1,26 @@
-import bcd from "@mdn/browser-compat-data";
-import { SupportBlock, Identifier, SupportStatement, VersionValue } from "@mdn/browser-compat-data/types";
 import browserslist from "browserslist";
+import { Identifier, SupportStatement, VersionValue, BrowserNames } from "@mdn/browser-compat-data/types";
 import { compare } from "compare-versions";
 
-type versionBrowser = { [key: string]: string };
-type compatResult = { key: string, browsers: versionBrowser, };
+type CompatResult = PriCompatResult & CompatResultMeta;
+
+// CompatResult without __browsers
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+interface PriCompatResult
+  extends Record<Exclude<string, "__browsers">, CompatResult> {}
+
+// CompatResult with browsers only
+interface CompatResultMeta {
+    __browsers?: browserVersionMap;
+}
+
+type browserVersionMap = {
+    [key in BrowserNames]?: string;
+};
 
 // key: caniuse (https://github.com/browserslist/caniuse-lite/blob/main/data/browsers.js)
 // value: mdn (https://github.com/mdn/browser-compat-data/tree/main/browsers)
-const browserMap: {[key: string]: string | null} = {
+const BROWSERS_MAP: {[key: string]: BrowserNames} = {
     "ie": "ie",
     "edge": "edge",
     "firefox": "firefox",
@@ -21,118 +33,110 @@ const browserMap: {[key: string]: string | null} = {
     "and_chr": "chrome_android",
     "and_ff": "firefox_android",
     "samsung": "samsunginternet_android",
-    "ie_mob": null,
-    "and_uc": null,
-    "bb": null,
-    "op_mini": null,
-    "and_qq": null,
-    "kaios": null,
-    "baidu": null,
+
+    // Unsupport browsers
+    // "ie_mob": null,
+    // "and_uc": null,
+    // "bb": null,
+    // "op_mini": null,
+    // "and_qq": null,
+    // "kaios": null,
+    // "baidu": null,
 };
 
-function browserSupportList(): {[key: string]: string[]} {
-    const browserVersions: {[key: string]: string[]} = {};
-    const bs = browserslist([
-        // "defaults"
-        "iOS >= 13",
-        "Safari >= 13",
-        "Firefox ESR",
-        "last 2 Chrome versions",
-        "last 2 Edge versions"
-    ]);
-    console.log(bs);
+class mdnCompat {
+    private browserVersions: {[BrowserNames: string]: string[]} = {};
 
-    bs.map((browser) => browser.split(" ")).forEach((browser) => {
-        const bcdBrowserName = browserMap[browser[0]];
-        if (!bcdBrowserName) {
-            console.log("unknow browser", browser[0]);
-            return;
-        }
-        (browserVersions[bcdBrowserName] || (browserVersions[bcdBrowserName] = [])).push(...browser[1].split("-"));
-    });
-    return browserVersions;
-}
-
-const browserVersions = browserSupportList();
-
-function browserSupport(version: string, versionStatement?: SupportStatement): boolean {
-    if (!versionStatement) {
-        console.log("warning: support no statement");
-        return true;
+    constructor(
+        queries?: string | readonly string[] | null,
+        opts?: browserslist.Options
+    ) {
+        browserslist(queries, opts).map((browser) => browser.split(" ")).forEach((browser) => {
+            const bcdBrowserName = BROWSERS_MAP[browser[0]];
+            if (!bcdBrowserName) {
+                // non support browser
+                return;
+            }
+            (this.browserVersions[bcdBrowserName] || (this.browserVersions[bcdBrowserName] = [])).push(...browser[1].split("-"));
+        });
     }
 
-    let versionAdded: VersionValue = false;
+    private getStatementVersionAdded(supportStatement: SupportStatement) : VersionValue {
+        let versionAdded: VersionValue = false;
 
-    if (versionStatement instanceof Array) {
-        // somthing changed, for example add prefix '-webkit-', etc.
-        for (const subStatement of versionStatement) {
-            if (Object.keys(subStatement).length == 1 && "version_added" in subStatement) {
-                // find the latest status and use it to compare
-                versionAdded = subStatement.version_added;
-                break;
+        if (supportStatement instanceof Array) {
+            // somthing changed, for example add prefix '-webkit-', etc.
+            for (const subStatement of supportStatement) {
+                if (Object.keys(subStatement).length == 1 && "version_added" in subStatement) {
+                    // find the latest status and use it to compare
+                    versionAdded = subStatement.version_added;
+                    break;
+                }
+            }
+        } else if ("version_added" in supportStatement) {
+            versionAdded = supportStatement.version_added;
+        }
+        return versionAdded;
+    }
+
+    unsupport(ident: Identifier): CompatResult {
+        const compat = ident && ident.__compat;
+        if (!compat) {
+            const primaryResults: PriCompatResult = {};
+            // nested identifier compat, run recursive
+            for (const [identName, subIdent] of Object.entries(ident) ) {
+                const unsupports = this.unsupport(subIdent);
+                if (Object.keys(unsupports).length) {
+                    primaryResults[identName] = unsupports;
+                }
+            }
+            return primaryResults;
+        }
+
+        const results: CompatResult = {};
+        const support = compat.support;
+
+        const unsupportBrowsers : browserVersionMap = {};
+        for (const [unknownBrowser, statement] of Object.entries(support)) {
+            if ( !(unknownBrowser in this.browserVersions)) continue; // ignore non-target browser
+
+            // force type casting
+            const browser = unknownBrowser as BrowserNames;
+
+            // parse get statement version added
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            let versionAdded = this.getStatementVersionAdded(statement!);
+            if (typeof versionAdded == "string") {
+                // FIXME: normalize for version compare, e.g. "≤37" (android webview), "review"
+                if (versionAdded.match(/[^\d|\.]/)) {
+                    // console.log("warning: special statement", key, browser, versionAdded);
+                    versionAdded = versionAdded.replace(/[^\d|\.]/g, "");
+                }
+            }
+
+            const versions = this.browserVersions[browser];
+            const unsupportVersions = versions.filter(version => {
+                if (!versionAdded) {
+                    // unsupported
+                    return true;
+                } else if (versionAdded === true) {
+                    // unknown in which version support was added
+                    return false;
+                }
+                return compare(version, versionAdded, "<");
+            });
+            if (unsupportVersions.length > 0) {
+                // pick the latest version
+                unsupportBrowsers[browser] = unsupportVersions[0];
             }
         }
-    } else if ("version_added" in versionStatement) {
-        versionAdded = versionStatement.version_added;
-    }
 
-    if (!versionAdded) {
-        // not supported
-        return false;
-    } else if (versionAdded === true) {
-        // unknown in which version support was added
-        return true;
-    }
-
-    // normalize for version compare
-    versionAdded = versionAdded.replace("≤", "");
-
-    return compare(version, versionAdded, ">=");
-}
-
-function unsupport(support: SupportBlock): versionBrowser {
-    const unsupportBrowsers: versionBrowser = {};
-    for (const browser in support) {
-        if (!(browser in browserVersions)) continue; // ignore
-
-        const versions = browserVersions[browser];
-        const unsupportVersions = versions.filter(version => !browserSupport(version, support[browser]));
-        if (unsupportVersions.length > 0) {
-            unsupportBrowsers[browser] = unsupportVersions[0];
-        }
-    }
-    return unsupportBrowsers;
-}
-
-function compat(properties: Identifier, parent?: string): compatResult[] {
-    const browserVersions: compatResult[] = [];
-
-    for (const key of Object.keys(properties) ) {
-        const property = properties[key];
-        const keyWithParent = parent ? (parent + " " + key) : key;
-
-        if (!property.__compat) {
-            browserVersions.push(...compat(property, keyWithParent));
-            continue;
+        if (Object.keys(unsupportBrowsers).length) {
+            results.__browsers = unsupportBrowsers;
         }
 
-        const support = property.__compat.support;
-        const unsupports = unsupport(support);
-        if (Object.keys(unsupports).length > 0) {
-            browserVersions.push({ key: keyWithParent, browsers: unsupports });
-            // console.log("unsupport", keyWithParent, unsupports);
-        }
+        return results;
     }
-
-    return browserVersions;
 }
 
-// runSupport({ gap: bcd.css.properties.gap });
-
-const unsupportedBrowsers = compat(bcd.css.properties);
-console.log(unsupportedBrowsers);
-
-// console.log(bcd.css.properties.length);
-
-// console.log(bcd.css.properties["-webkit-border-before"]);
-// isSupport(bcd.css.properties["background"].__compat!.support!);
+export default mdnCompat;
