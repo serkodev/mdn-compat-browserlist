@@ -1,6 +1,6 @@
 {
   "name": "mdn-compat-browserlist",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "MIT",
   "author": "SerKo (https://github.com/serkodev)",
   "repository": {
@@ -18,7 +18,7 @@
     "compatible"
   ],
   "main": "dist/main.js",
-  "types": "dist/main.d.js",
+  "types": "dist/main.d.ts",
   "scripts": {
     "prebuild": "rm -rf dist",
     "build": "tsc",
@@ -38,5 +38,8 @@
   },
   "peerDependencies": {
     "@mdn/browser-compat-data": "^4.1.16"
-  }
+  },
+  "files": [
+    "dist/**/*"
+  ]
 }
