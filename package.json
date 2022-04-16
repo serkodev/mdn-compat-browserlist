@@ -13,5 +13,8 @@
     "eslint": "^8.13.0",
     "ts-node": "^10.7.0",
     "typescript": "^4.6.3"
+  },
+  "peerDependencies": {
+    "@mdn/browser-compat-data": "^4.1.16"
   }
 }
