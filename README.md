@@ -39,7 +39,7 @@ compat.unsupport(bcd.css.properties["justify-content"]);
 
 ## Results
 
-For listing unsupported features, the browser list in `__browsers` will contains the max version of the browser which filter by browserlist filter.
+For listing unsupported features, the browser list in `__browsers` will contains the max version of the browser which filter by browserlist query.
 
 ### Normal result sample
 
