@@ -2,6 +2,19 @@
   "name": "mdn-compat-browserlist",
   "version": "0.0.1",
   "license": "MIT",
+  "author": "SerKo (https://github.com/serkodev)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/serkodev/mdn-compat-browserlist.git"
+  },
+  "homepage": "https://github.com/serkodev/mdn-compat-browserlist",
+  "main": "dist/main.js",
+  "types": "dist/main.d.js",
+  "scripts": {
+    "prebuild": "rm -rf dist",
+    "build": "tsc",
+    "prepublishOnly": "yarn build"
+  },
   "dependencies": {
     "@mdn/browser-compat-data": "^4.1.16",
     "browserslist": "^4.20.2",
