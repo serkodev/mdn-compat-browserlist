@@ -41,7 +41,9 @@ compat.unsupport(bcd.css.properties["justify-content"]);
 
 For listing unsupported features, the browser list in `__browsers` will contains the max version of the browser which filter by browserlist filter.
 
-### Normal result sample (must contains `__browsers` key)
+### Normal result sample
+
+must contains `__browsers` key
 
 ```js
 'box-shadow': {
@@ -59,7 +61,9 @@ For listing unsupported features, the browser list in `__browsers` will contains
 }
 ```
 
-### Nested result sample (must NOT contains `__browsers` key)
+### Nested result sample
+
+must NOT contains `__browsers` key
 
 ```js
 'justify-content': {
