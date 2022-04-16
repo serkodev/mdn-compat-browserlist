@@ -8,6 +8,15 @@
     "url": "https://github.com/serkodev/mdn-compat-browserlist.git"
   },
   "homepage": "https://github.com/serkodev/mdn-compat-browserlist",
+  "keywords": [
+    "mdn",
+    "mozilla",
+    "browserlist",
+    "browser",
+    "compat",
+    "compatible",
+    "compatible"
+  ],
   "main": "dist/main.js",
   "types": "dist/main.d.js",
   "scripts": {
