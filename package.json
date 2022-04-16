@@ -1,6 +1,6 @@
 {
-  "name": "browserslist-compat",
-  "version": "1.0.0",
+  "name": "mdn-compat-browserlist",
+  "version": "0.0.1",
   "license": "MIT",
   "dependencies": {
     "@mdn/browser-compat-data": "^4.1.16",
