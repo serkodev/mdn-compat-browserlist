@@ -4,8 +4,9 @@ List all browsers compat data from [MDN](https://developer.mozilla.org/) and fil
 
 ## Features
 
-- [x] Support filter all browserlist queries
-- [x] List all browser unsupported features (including HTML, CSS, JavaScript, SVG, Web API, WebExtensions, etc.)
+- [x] [Support filter all browserlist queries](#usage)
+- [x] List all [browser unsupported features](#unsupport-listing) (including HTML, CSS, JavaScript, SVG, Web API, WebExtensions, etc.)
+- [x] List all [alternative CSS properties](#alternative-css-properties) (`-webkit`, `-moz`, etc.)
 - [ ] List all browser supported features
 
 ## Install
@@ -31,17 +32,21 @@ Init `MdnCompat` with browserlist query and config (optional).
 
 ```js
 const compat = new MdnCompat(["> 0.5%", "last 2 versions", "not dead"]);
+```
 
+### Unsupport listing
+
+```
 compat.unsupport(bcd.css);
 compat.unsupport(bcd.css.properties);
 compat.unsupport(bcd.css.properties["justify-content"]);
 ```
 
-## Results
+#### Results
 
 For listing unsupported features, the browser list in `__browsers` will contains the max version of the browser which filter by browserlist query.
 
-### Normal result sample
+##### Normal result sample
 
 must contains `__browsers` key
 
@@ -61,7 +66,7 @@ must contains `__browsers` key
 }
 ```
 
-### Nested result sample
+##### Nested result sample
 
 must NOT contains `__browsers` key
 
@@ -73,6 +78,32 @@ must NOT contains `__browsers` key
   grid_context: {
     __browsers: { ie: '11' }
   }
+}
+```
+
+### Alternative CSS properties
+
+```js
+compat.alternative(bcd.css.properties);
+compat.alternative(bcd.css.properties["justify-content"]);
+```
+
+#### Results
+
+```js
+compat.alternative(bcd.css.properties["font-smooth"]);
+
+// output
+["-webkit-font-smoothing", "-moz-osx-font-smoothing"];
+```
+
+```js
+compat.alternative(bcd.css.properties["justify-content"]);
+
+// output
+{
+  flex_context: ["-webkit-justify-content"],
+  grid_context: []
 }
 ```
 
