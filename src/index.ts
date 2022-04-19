@@ -76,6 +76,15 @@ export class MdnCompat {
         } else if ("version_added" in supportStatement) {
             versionAdded = supportStatement.version_added;
         }
+
+        if (typeof versionAdded == "string") {
+            // FIXME: normalize for version compare, e.g. "≤37" (android webview), "review"
+            if (versionAdded.match(/[^\d|\.]/)) {
+                // console.log("warning: special statement", key, browser, versionAdded);
+                versionAdded = versionAdded.replace(/[^\d|\.]/g, "");
+            }
+        }
+
         return versionAdded;
     }
 
@@ -98,23 +107,13 @@ export class MdnCompat {
         const support = compat.support;
 
         const unsupportBrowsers : browserVersionMap = {};
-        for (const unknownBrowser of Object.keys(support)) {
-            const statement = support[unknownBrowser];
-            if ( !(unknownBrowser in this.browserVersions)) continue; // ignore non-target browser
 
-            // force type casting
-            const browser = unknownBrowser as BrowserNames;
+        for (const browser of Object.keys(support).filter(browser => browser in this.browserVersions) as BrowserNames[]) {
+            const statement = support[browser];
 
             // parse get statement version added
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            let versionAdded = this.getStatementVersionAdded(statement!);
-            if (typeof versionAdded == "string") {
-                // FIXME: normalize for version compare, e.g. "≤37" (android webview), "review"
-                if (versionAdded.match(/[^\d|\.]/)) {
-                    // console.log("warning: special statement", key, browser, versionAdded);
-                    versionAdded = versionAdded.replace(/[^\d|\.]/g, "");
-                }
-            }
+            const versionAdded = this.getStatementVersionAdded(statement!);
 
             const versions = this.browserVersions[browser];
             const unsupportVersions = versions.filter(version => {
