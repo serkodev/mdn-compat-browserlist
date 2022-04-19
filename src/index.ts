@@ -1,5 +1,5 @@
 import browserslist from "browserslist";
-import { Identifier, SupportStatement, VersionValue, BrowserNames } from "@mdn/browser-compat-data/types";
+import { Identifier, SupportStatement, VersionValue, BrowserNames, SimpleSupportStatement } from "@mdn/browser-compat-data/types";
 import { compare } from "compare-versions";
 
 type CompatResult = PriCompatResult & CompatResultMeta;
@@ -13,6 +13,10 @@ interface PriCompatResult
 interface CompatResultMeta {
     __browsers?: browserVersionMap;
 }
+
+type AlternativeNameResult = {
+    [key: string]: string[] | AlternativeNameResult
+} | string[]
 
 type browserVersionMap = {
     [key in BrowserNames]?: string;
@@ -86,6 +90,70 @@ export class MdnCompat {
         }
 
         return versionAdded;
+    }
+
+    private getStatementAlternativeName(name: string, supportStatement: SupportStatement): string[] {
+        const alternativeNamesMap: { [key: string]: true } = {};
+        const addAlternativeName = (stmt: SimpleSupportStatement) => {
+            if (stmt.alternative_name) {
+                alternativeNamesMap[stmt.alternative_name] = true;
+            }
+            if (stmt.prefix) {
+                alternativeNamesMap[stmt.prefix + name] = true;
+            }
+        };
+        if (supportStatement instanceof Array) {
+            // somthing changed, for example add prefix '-webkit-', etc.
+            for (const subStatement of supportStatement) {
+                addAlternativeName(subStatement);
+            }
+        } else if ("version_added" in supportStatement) {
+            addAlternativeName(supportStatement);
+        }
+
+        return Object.keys(alternativeNamesMap);
+    }
+
+    private support(browser: string, supportStatement: SupportStatement): boolean {
+        const versionAdded = this.getStatementVersionAdded(supportStatement);
+        const versions = this.browserVersions[browser];
+        return versions.every(version => {
+            if (!versionAdded) {
+                // unsupported
+                return false;
+            } else if (versionAdded === true) {
+                // unknown in which version support was added
+                return true;
+            }
+            return compare(version, versionAdded, ">=");
+        });
+    }
+
+    alternative(ident: Identifier, identName = ""): AlternativeNameResult {
+        // console.log(ident);
+        const compat = ident && ident.__compat;
+        if (!compat) {
+            const primaryResults: AlternativeNameResult = { };
+            // nested identifier compat, run recursive
+            for (const identName of Object.keys(ident) ) {
+                const subIdent = ident[identName];
+                Object.assign(primaryResults, this.alternative(subIdent, identName));
+            }
+            return identName ? { [identName]: primaryResults } : primaryResults;
+        }
+
+        const name = ((identName.indexOf("_") != -1 && compat.mdn_url) ? compat.mdn_url.split("/").pop() : "") || identName || "";
+        const results: { [key: string]: true } = {};
+        const support = compat.support;
+
+        for (const browser of Object.keys(support).filter(browser => browser in this.browserVersions) as BrowserNames[]) {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            const statement = support[browser]!;
+            if (this.support(browser, statement)) {
+                this.getStatementAlternativeName(name, statement).forEach(alternativeName => results[alternativeName] = true);
+            }
+        }
+        return identName ? { [identName]: Object.keys(results) } : Object.keys(results);
     }
 
     unsupport(ident: Identifier): CompatResult {
