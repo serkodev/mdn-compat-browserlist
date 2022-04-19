@@ -18,6 +18,16 @@ type AlternativeNameResult = {
     [key: string]: string[] | AlternativeNameResult
 } | string[]
 
+export const flatAlternativeNameResult = (alt: AlternativeNameResult): string[] => {
+    if (alt instanceof Array) return alt;
+    const result: string[] = [];
+    for (const key in alt) {
+        const r = flatAlternativeNameResult(alt[key]);
+        result.push(...r);
+    }
+    return result;
+};
+
 type browserVersionMap = {
     [key in BrowserNames]?: string;
 };
