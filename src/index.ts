@@ -142,7 +142,7 @@ export class MdnCompat {
             return identName ? { [identName]: primaryResults } : primaryResults;
         }
 
-        const name = ((identName.indexOf("_") != -1 && compat.mdn_url) ? compat.mdn_url.split("/").pop() : "") || identName || "";
+        const name = (compat.mdn_url ? compat.mdn_url.split("/").pop() : "") || identName || "";
         const results: { [key: string]: true } = {};
         const support = compat.support;
 
